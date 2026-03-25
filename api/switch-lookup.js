@@ -68,27 +68,32 @@ module.exports = async (req, res) => {
     let bestScore = 0;
 
     for (const item of foodItems) {
+      // Check both FOOD COMMODITY ITEM and SUB-GROUP (fish/seafood often have empty ITEM)
       const itemName = (item['FOOD COMMODITY ITEM'] || '').toLowerCase().trim();
-      if (!itemName) continue;
+      const subGroup = (item['FOOD COMMODITY SUB-GROUP'] || '').toLowerCase().trim();
+      
+      // Use itemName if available, otherwise fall back to subGroup
+      const searchableName = itemName || subGroup;
+      if (!searchableName) continue;
 
       for (const candidate of searchCandidates) {
         let score = 0;
 
-        // Exact match
-        if (itemName === candidate) {
+        // Exact match (check both itemName and subGroup)
+        if (searchableName === candidate) {
           score = 100;
         }
-        // Item name contains the candidate exactly
-        else if (itemName.includes(candidate) && candidate.length > 2) {
+        // searchableName contains the candidate exactly
+        else if (searchableName.includes(candidate) && candidate.length > 2) {
           score = 90 + Math.min(9, candidate.length);
         }
-        // Candidate contains the item name
-        else if (candidate.includes(itemName) && itemName.length > 2) {
+        // Candidate contains the searchableName
+        else if (candidate.includes(searchableName) && searchableName.length > 2) {
           score = 85;
         }
         // Check Italian name in parentheses
         else {
-          const italianMatch = itemName.match(/\(([^)]+)\)/);
+          const italianMatch = searchableName.match(/\(([^)]+)\)/);
           if (italianMatch) {
             const italianName = italianMatch[1].toLowerCase();
             if (italianName === normalizedSearch || normalizedSearch.includes(italianName) || italianName.includes(normalizedSearch)) {
@@ -101,9 +106,9 @@ module.exports = async (req, res) => {
         if (score === 0) {
           const candidateWords = candidate.split(/\s+/).filter(w => w.length > 2);
           for (const word of candidateWords) {
-            if (itemName === word) score = Math.max(score, 80);
-            else if (itemName.startsWith(word)) score = Math.max(score, 70);
-            else if (itemName.includes(word) && word.length > 3) score = Math.max(score, 55);
+            if (searchableName === word) score = Math.max(score, 80);
+            else if (searchableName.startsWith(word)) score = Math.max(score, 70);
+            else if (searchableName.includes(word) && word.length > 3) score = Math.max(score, 55);
           }
         }
 
@@ -133,7 +138,7 @@ module.exports = async (req, res) => {
       matchScore: bestScore,
       searchTerm,
       translatedTo: translatedName || null,
-      matchedItem: bestMatch['FOOD COMMODITY ITEM'],
+      matchedItem: bestMatch['FOOD COMMODITY ITEM'] || bestMatch['FOOD COMMODITY SUB-GROUP'],
       switchId: bestMatch.id,
       
       environmental: {
