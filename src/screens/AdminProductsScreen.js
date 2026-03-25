@@ -45,6 +45,7 @@ function AdminProductsScreen() {
   const [scioScreenshot, setScioScreenshot] = useState(null);
   const [analyzingScio, setAnalyzingScio] = useState(false);
   const [scioAnalysisStatus, setScioAnalysisStatus] = useState(null); // { type: 'success'|'error', message: string }
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
     // Check if already authenticated in session
@@ -506,24 +507,66 @@ function AdminProductsScreen() {
                     </select>
                   </div>
                   
-                  <div style={{ width: '100px' }}>
+                  <div style={{ width: '150px', position: 'relative' }}>
                     <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
                       Emoji
                     </label>
-                    <input
-                      type="text"
-                      value={formData.emoji}
-                      onChange={(e) => setFormData(prev => ({ ...prev, emoji: e.target.value }))}
-                      placeholder="🥬"
+                    <div 
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       style={{
                         width: '100%',
                         padding: '10px',
                         border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         fontSize: '1.5rem',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: '#fff'
                       }}
-                    />
+                    >
+                      {formData.emoji || '🥬'}
+                    </div>
+                    {showEmojiPicker && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        zIndex: 1000,
+                        backgroundColor: '#fff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(6, 1fr)',
+                        gap: '4px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}>
+                        {['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥝', '🍅', '🥑', '🥦', '🥬', '🥒', '🌽', '🥕', '🧄', '🧅', '🥔', '🍆', '🌶️', '🫑', '🥩', '🍗', '🥓', '🍖', '🐟', '🐠', '🦐', '🦑', '🧀', '🥚', '🥛', '🍞', '🥐', '🫘', '🥜', '🌰'].map(emoji => (
+                          <div
+                            key={emoji}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, emoji }));
+                              setShowEmojiPicker(false);
+                            }}
+                            style={{
+                              fontSize: '1.5rem',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              borderRadius: '4px',
+                              textAlign: 'center',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                          >
+                            {emoji}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
