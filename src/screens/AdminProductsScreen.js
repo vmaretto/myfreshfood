@@ -25,6 +25,7 @@ const emptyProduct = {
   scio_sugar: '',
   scio_water: '',
   scio_protein: '',
+  scio_fat: '',
   scio_fiber: '',
   active: true
 };
@@ -149,6 +150,7 @@ function AdminProductsScreen() {
           scio_sugar: data.sugar != null ? String(data.sugar) : prev.scio_sugar,
           scio_water: data.water != null ? String(data.water) : prev.scio_water,
           scio_protein: data.protein != null ? String(data.protein) : prev.scio_protein,
+          scio_fat: data.fat != null ? String(data.fat) : prev.scio_fat,
           scio_fiber: data.fiber != null ? String(data.fiber) : prev.scio_fiber,
         }));
         
@@ -187,7 +189,7 @@ function AdminProductsScreen() {
       const method = editingProduct ? 'PUT' : 'POST';
       // Convert comma decimals to dots for PostgreSQL
       const cleanedData = { ...formData };
-      ['scio_brix', 'scio_calories', 'scio_carbs', 'scio_sugar', 'scio_water', 'scio_protein', 'scio_fiber'].forEach(key => {
+      ['scio_brix', 'scio_calories', 'scio_carbs', 'scio_sugar', 'scio_water', 'scio_protein', 'scio_fat', 'scio_fiber'].forEach(key => {
         if (cleanedData[key] && typeof cleanedData[key] === 'string') {
           cleanedData[key] = cleanedData[key].replace(',', '.');
         }
@@ -232,6 +234,7 @@ function AdminProductsScreen() {
       scio_sugar: product.scio_sugar || '',
       scio_water: product.scio_water || '',
       scio_protein: product.scio_protein || '',
+      scio_fat: product.scio_fat || '',
       scio_fiber: product.scio_fiber || '',
       active: product.active !== false
     });
@@ -733,6 +736,7 @@ function AdminProductsScreen() {
                       { key: 'scio_sugar', label: 'Zuccheri (g)', placeholder: 'es: 1.7' },
                       { key: 'scio_water', label: 'Acqua (%)', placeholder: 'es: 89.3' },
                       { key: 'scio_protein', label: 'Proteine (g)', placeholder: 'es: 2.8' },
+                      { key: 'scio_fat', label: 'Grassi (g)', placeholder: 'es: 0.4' },
                       { key: 'scio_fiber', label: 'Fibre (g)', placeholder: 'es: 2.6' },
                     ].map(field => (
                       <div key={field.key}>
