@@ -164,7 +164,7 @@ const resources = {
       
       // Recognize Screen
       "recognize.title": "Riconosci Prodotto",
-      "recognize.instructions": "Fotografa il frutto o la verdura da analizzare",
+      "recognize.instructions": "Fotografa l'alimento da analizzare",
       "recognize.tapToPhoto": "Tocca per fotografare o caricare",
       "recognize.changePhoto": "Cambia foto",
       "recognize.noImage": "Scatta o carica una foto del prodotto",

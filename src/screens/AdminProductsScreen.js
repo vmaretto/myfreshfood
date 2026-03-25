@@ -497,6 +497,12 @@ function AdminProductsScreen() {
                     >
                       <option value="vegetable">🥬 Verdura</option>
                       <option value="fruit">🍎 Frutta</option>
+                      <option value="meat">🥩 Carne</option>
+                      <option value="fish">🐟 Pesce</option>
+                      <option value="cheese">🧀 Formaggi</option>
+                      <option value="dairy">🥛 Latticini</option>
+                      <option value="bread">🍞 Pane e cereali</option>
+                      <option value="legumes">🫘 Legumi</option>
                     </select>
                   </div>
                   
@@ -856,7 +862,16 @@ function AdminProductsScreen() {
                       color: '#666',
                       fontSize: '0.85rem'
                     }}>
-                      {product.category === 'fruit' ? '🍎 Frutta' : '🥬 Verdura'}
+                      {{
+                        'fruit': '🍎 Frutta',
+                        'vegetable': '🥬 Verdura',
+                        'meat': '🥩 Carne',
+                        'fish': '🐟 Pesce',
+                        'cheese': '🧀 Formaggi',
+                        'dairy': '🥛 Latticini',
+                        'bread': '🍞 Pane e cereali',
+                        'legumes': '🫘 Legumi'
+                      }[product.category] || '🥬 Verdura'}
                     </p>
                     {!product.active && (
                       <span style={{
