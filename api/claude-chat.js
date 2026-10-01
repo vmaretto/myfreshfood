@@ -1,3 +1,5 @@
+import claudeHelper from './_claude.js';
+const { callClaude } = claudeHelper;
 // api/claude-chat.js - Chat endpoint for Claude conversations
 export default async function handler(req, res) {
   // Enable CORS
@@ -67,32 +69,15 @@ IMPORTANTE:
     messages.push({ role: "user", content: message });
 
     // Call Claude API with system as a separate parameter
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1000,
-        system: systemPrompt,  // System prompt as a separate parameter
-        messages: messages
-      })
+    const text = await callClaude({
+      system: systemPrompt,
+      maxTokens: 4000,
+      messages: messages
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Claude API error:', errorData);
-      throw new Error(errorData.error?.message || 'Claude API call failed');
-    }
-
-    const data = await response.json();
     
     return res.status(200).json({
       success: true,
-      response: data.content[0].text
+      response: text
     });
     
   } catch (error) {

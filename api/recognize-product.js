@@ -1,10 +1,11 @@
 // api/recognize-product.js
-// Vercel Serverless Function to recognize fruits/vegetables with Claude Vision
+// Vercel Serverless Function to recognize a food product or a whole dish with Claude Vision
 
 // Load .env.local for local development
 require('dotenv').config({ path: '.env.local' });
 
-const Anthropic = require('@anthropic-ai/sdk');
+const { callClaude, parseJson } = require('./_claude.js');
+const { getItemNames } = require('./_switch.js');
 
 module.exports = async (req, res) => {
   // CORS headers
@@ -41,99 +42,54 @@ module.exports = async (req, res) => {
       });
     }
 
-    const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      timeout: 25000, // 25 second timeout
-    });
+    let switchNames = [];
+    try {
+      switchNames = await getItemNames();
+    } catch (err) {
+      console.error('Could not load SWITCH item list:', err.message);
+    }
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+    const prompt = `Look at this photo of food. It can be either a SINGLE food product (a fruit, a vegetable, a cheese, a piece of bread...) or a prepared DISH / RECIPE (pasta alla carbonara, pizza margherita, insalata caprese, lasagna, a sandwich, a dessert...).
+
+If it is a DISH, estimate the recipe of ONE typical Italian portion: list the main ingredients (usually 3-10, include cooking fat and cheese, skip salt/pepper/water) with realistic grams for one portion, based on the classic recipe and on what you see.
+
+For every ingredient (and for a single product), pick the closest item from this list of the SWITCH food database and copy its name EXACTLY in "switchItem" (use null if nothing is reasonably close):
+${switchNames.join(' | ')}
+
+Return ONLY a JSON object, no other text:
+{
+  "type": "product" or "dish",
+  "name": string (specific Italian name, e.g. "Spaghetti alla carbonara", "Mela Golden"),
+  "nameEn": string (English name),
+  "category": string (for a product one of "frutta", "verdura", "ortaggio", "legume", "erba aromatica", "latticino", "cereale", "proteina", "bevanda", "altro"; for a dish one of "primo", "secondo", "contorno", "piatto unico", "pizza", "dolce", "colazione", "street food", "altro"),
+  "emoji": string (single emoji closest to the food, 🍽️ if none),
+  "confidence": "alta" | "media" | "bassa",
+  "description": string (brief description in Italian, max 20 words),
+  "visualCues": string (what visual features led to this identification),
+  "switchItem": string or null (product only: closest SWITCH item),
+  "portionGrams": number (dish only: total grams of the portion),
+  "ingredients": [ { "name": string (Italian), "switchItem": string or null, "grams": number } ] (dish only, [] for a product)
+}
+
+If you cannot identify any food, return:
+{"type": "product", "name": "Non riconosciuto", "nameEn": "Not recognized", "category": "altro", "emoji": "❓", "confidence": "bassa", "description": "Impossibile identificare il prodotto nell'immagine", "visualCues": "", "switchItem": null, "ingredients": []}`;
+
+    const responseText = await callClaude({
+      maxTokens: 4000,
       messages: [
         {
           role: 'user',
           content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64Data,
-              },
-            },
-            {
-              type: 'text',
-              text: `Identify the food item in this image. Focus is on fresh produce, but recognize ALL food types.
-
-MAIN CATEGORIES:
-1. FRUTTA E VERDURA (primary focus):
-   - Vegetables: pomodoro, zucchina, melanzana, peperone, cetriolo, fagiolino, insalata, bietola, spinacio, cavolo, broccolo, cavolfiore
-   - Fruits: mela, pera, arancia, limone, banana, fragola, pesca, albicocca, ciliegia, uva, kiwi, melone, anguria
-   - Herbs: basilico, prezzemolo, rosmarino, salvia, menta
-
-2. LATTICINI (dairy):
-   - Latte, yogurt, formaggio (mozzarella, parmigiano, ricotta, etc.), burro, panna
-
-3. CEREALI E DERIVATI (grains):
-   - Pane, pasta, riso, farro, orzo, cereali da colazione, crackers, biscotti
-
-4. PROTEINE (proteins):
-   - Carne (pollo, manzo, maiale), pesce, uova, legumi (fagioli, ceci, lenticchie), tofu
-
-5. BEVANDE (beverages):
-   - Succhi, smoothie, caffè, tè
-
-6. ALTRO:
-   - Snack, dolci, condimenti, etc.
-
-VISUAL CUES FOR DAIRY:
-- Yogurt: white/cream colored, in glass jar or plastic container, creamy texture
-- Latte: white liquid in glass, bottle, or carton
-- Formaggio: various textures and colors depending on type
-
-Return a JSON object with these fields:
-{
-  "name": string (specific Italian name, e.g., "Yogurt bianco", "Mozzarella di bufala", "Pomodoro cuore di bue"),
-  "nameEn": string (English name),
-  "category": string (one of: "frutta", "verdura", "ortaggio", "legume", "erba aromatica", "latticino", "cereale", "proteina", "bevanda", "altro"),
-  "emoji": string (single emoji - 🍎apple, 🍐pear, 🍊orange, 🍋lemon, 🍌banana, 🍉watermelon, 🍇grapes, 🍓strawberry, 🫐blueberry, 🍑peach, 🥭mango, 🍍pineapple, 🥝kiwi, 🍒cherry, 🥬leafy greens, 🥒cucumber/zucchini, 🥕carrot, 🌽corn, 🫑pepper, 🍆eggplant, 🥦broccoli, 🧅onion, 🧄garlic, 🥔potato, 🍅tomato, 🌶️chili, 🥛milk/yogurt, 🧀cheese, 🥚egg, 🍞bread, 🥖baguette, 🍝pasta, 🍗chicken, 🥩meat, 🐟fish, 🫘beans, ☕coffee, 🧃juice. Use closest match or 🍽️ if none),
-  "confidence": "alta" | "media" | "bassa",
-  "description": string (brief description in Italian, max 20 words),
-  "visualCues": string (what visual features led to this identification),
-  "commonVarieties": array of strings (common varieties if applicable),
-  "nutritionHint": string (brief nutrition fact in Italian, optional)
-}
-
-If you cannot identify the food, return:
-{
-  "name": "Non riconosciuto",
-  "nameEn": "Not recognized",
-  "category": "altro",
-  "emoji": "❓",
-  "confidence": "bassa",
-  "description": "Impossibile identificare il prodotto nell'immagine",
-  "visualCues": "",
-  "commonVarieties": []
-}
-
-Return ONLY the JSON object, no other text.`
-            }
-          ],
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } },
+            { type: 'text', text: prompt }
+          ]
         }
-      ],
+      ]
     });
 
-    // Parse Claude's response
-    const responseText = response.content[0].text.trim();
     let productData;
-    
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        productData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
-      }
+      productData = parseJson(responseText);
     } catch (parseError) {
       console.error('Error parsing Claude response:', parseError);
       productData = {
@@ -146,6 +102,9 @@ Return ONLY the JSON object, no other text.`
         rawResponse: responseText
       };
     }
+
+    productData.isDish = productData.type === 'dish' && Array.isArray(productData.ingredients) && productData.ingredients.length > 0;
+    if (!productData.isDish) productData.ingredients = [];
 
     // Add metadata
     productData.recognizedAt = new Date().toISOString();

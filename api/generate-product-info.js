@@ -4,11 +4,7 @@
 // Load .env.local for local development
 require('dotenv').config({ path: '.env.local' });
 
-const Anthropic = require('@anthropic-ai/sdk');
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const { callClaude } = require('./_claude.js');
 
 // Cache to avoid regenerating for same products
 const cache = new Map();
@@ -75,19 +71,11 @@ Be accurate with nutritional values. Use real data.
 For seasonality, consider Italian/Mediterranean growing seasons.
 Make tips practical and useful for consumers.`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
-
     // Extract JSON from response
-    const responseText = message.content[0].text;
+    const responseText = await callClaude({
+      maxTokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    });
     let productInfo;
 
     try {

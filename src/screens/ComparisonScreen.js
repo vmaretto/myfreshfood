@@ -7,7 +7,7 @@ import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
 
 // Componente per riga di confronto a 3 colonne
-const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, language }) => {
+const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, language, hideMeasured }) => {
   // Calcola scarto percentuale
   const calculateDeviation = (estimate, reference) => {
     if (!reference || reference === 0 || estimate === null || estimate === undefined) return null;
@@ -103,7 +103,7 @@ const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, la
       {/* 3 colonne */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateColumns: hideMeasured ? '1fr 1fr' : '1fr 1fr 1fr',
         gap: '8px',
         textAlign: 'center'
       }}>
@@ -124,7 +124,7 @@ const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, la
         </div>
         
         {/* Misurato (SCIO) */}
-        <div style={{
+        {!hideMeasured && <div style={{
           padding: '10px 6px',
           background: measured !== null && measured !== undefined ? '#dbeafe' : '#f1f5f9',
           borderRadius: '8px',
@@ -141,7 +141,7 @@ const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, la
             {formatValue(measured)}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{unit}</div>
-        </div>
+        </div>}
         
         {/* DB SWITCH */}
         <div style={{
@@ -257,6 +257,7 @@ export default function ComparisonScreen() {
   };
 
   const score = calculateScore();
+  const isDish = !!(recognizedProduct?.isDish || switchData?.isDish);
 
   const getBadge = (s) => {
     if (s >= 90) return { name: language === 'it' ? '🏆 Esperto Assoluto!' : '🏆 Absolute Expert!', color: SWITCH_COLORS.gold };
@@ -384,8 +385,8 @@ export default function ComparisonScreen() {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <span><strong style={{ color: SWITCH_COLORS.darkBlue }}>{language === 'it' ? 'Tua Stima' : 'Your Estimate'}</strong> = {language === 'it' ? 'quello che hai indicato' : 'what you estimated'}</span>
-          <span><strong style={{ color: '#1d4ed8' }}>{language === 'it' ? 'Misurato' : 'Measured'}</strong> = {language === 'it' ? 'dallo spettrometro' : 'from spectrometer'}</span>
-          <span><strong style={{ color: '#15803d' }}>DB SWITCH</strong> = {language === 'it' ? 'valore medio' : 'average value'}</span>
+          {!isDish && <span><strong style={{ color: '#1d4ed8' }}>{language === 'it' ? 'Misurato' : 'Measured'}</strong> = {language === 'it' ? 'dallo spettrometro' : 'from spectrometer'}</span>}
+          <span><strong style={{ color: '#15803d' }}>DB SWITCH</strong> = {isDish ? (language === 'it' ? 'somma degli ingredienti del piatto' : 'sum of the dish ingredients') : (language === 'it' ? 'valore medio' : 'average value')}</span>
         </div>
       </div>
 
@@ -407,6 +408,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.energy}
           unit="kcal/100g"
           language={language}
+          hideMeasured={isDish}
         />
         
         <ComparisonRow
@@ -417,6 +419,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.carbohydrates}
           unit="g/100g"
           language={language}
+          hideMeasured={isDish}
         />
         
         <ComparisonRow
@@ -427,6 +430,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.proteins}
           unit="g/100g"
           language={language}
+          hideMeasured={isDish}
         />
         
         <ComparisonRow
@@ -437,6 +441,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.environmental?.carbonFootprint}
           unit="kg/kg"
           language={language}
+          hideMeasured={isDish}
         />
         
         <ComparisonRow
@@ -447,6 +452,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.environmental?.waterFootprint}
           unit="L/kg"
           language={language}
+          hideMeasured={isDish}
         />
       </div>
 

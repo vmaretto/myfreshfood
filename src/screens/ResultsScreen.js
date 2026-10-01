@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { Flame, Droplets, Leaf, TrendingUp, TrendingDown, Minus, Trophy, Target } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import DishCard from '../components/DishCard';
+import { fetchSwitchData } from '../utils/switchLookup';
 // EnvironmentalCard now integrated in ProductCard
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
@@ -217,21 +219,24 @@ function ResultsScreen() {
     const fetchSwitchData = async () => {
       if (!recognizedProduct) return;
       
-      const searchTerm = recognizedProduct.nameEn || recognizedProduct.name;
-      if (!searchTerm) return;
+      if (!recognizedProduct.isDish && !(recognizedProduct.nameEn || recognizedProduct.name)) return;
+
+      // Reuse the lookup done by the quiz for the same dish
+      const cached = sessionStorage.getItem('switchData');
+      if (cached && recognizedProduct.isDish) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.isDish && parsed.dishName === recognizedProduct.name) {
+            setSwitchData(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
       
       setSwitchLoading(true);
       try {
-        const response = await fetch('/api/switch-lookup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nameEn: searchTerm })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setSwitchData(data);
-        }
+        const data = await fetchSwitchData(recognizedProduct);
+        setSwitchData(data);
       } catch (error) {
         console.error('Error fetching SWITCH data:', error);
       } finally {
@@ -347,7 +352,7 @@ function ResultsScreen() {
 
   return (
     <SwitchLayout 
-      title={`🍽️ ${language === 'it' ? 'Scheda Prodotto' : 'Product Card'}`}
+      title={`🍽️ ${recognizedProduct?.isDish ? (language === 'it' ? 'Scheda Piatto' : 'Dish Card') : (language === 'it' ? 'Scheda Prodotto' : 'Product Card')}`}
       subtitle={recognizedProduct?.name || ''}
       compact={true}
     >
@@ -420,6 +425,14 @@ function ResultsScreen() {
       {/* SCHEDA PRODOTTO - Prima di tutto */}
       {recognizedProduct && (
         <div style={{ marginBottom: '20px' }}>
+          {recognizedProduct.isDish ? (
+            <DishCard
+              dish={recognizedProduct}
+              productImage={productImage}
+              switchData={switchData}
+              loading={switchLoading}
+            />
+          ) : (
           <ProductCard 
             productName={recognizedProduct.name}
             measuredValue={results?.value}
@@ -428,6 +441,7 @@ function ResultsScreen() {
             switchData={switchData}
             scanMethod={scanMethod}
           />
+          )}
         </div>
       )}
 

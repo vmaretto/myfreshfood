@@ -4,7 +4,7 @@
 // Load .env.local for local development
 require('dotenv').config({ path: '.env.local' });
 
-const Anthropic = require('@anthropic-ai/sdk');
+const { callClaude } = require('./_claude.js');
 
 module.exports = async (req, res) => {
   // CORS headers
@@ -31,13 +31,8 @@ module.exports = async (req, res) => {
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const mediaType = image.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
 
-    const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+    const responseText = await callClaude({
+      maxTokens: 4000,
       messages: [
         {
           role: 'user',
@@ -87,7 +82,6 @@ Return ONLY the JSON object, no other text.`
     });
 
     // Parse Claude's response
-    const responseText = response.content[0].text.trim();
     let extractedData;
     
     try {

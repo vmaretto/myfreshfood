@@ -228,6 +228,32 @@ function RecognizeScreen() {
     }
   };
 
+  // Piatti: l'utente può correggere ingredienti e grammi prima del quiz
+  const updateIngredients = (ingredients) => {
+    const updated = { ...recognized, ingredients };
+    setRecognized(updated);
+    sessionStorage.setItem('recognizedProduct', JSON.stringify(updated));
+    sessionStorage.removeItem('switchData');
+  };
+
+  const changeIngredient = (index, field, value) => {
+    const ingredients = recognized.ingredients.map((ing, i) => {
+      if (i !== index) return ing;
+      // Renaming means a different food: let the server match it again
+      if (field === 'name') return { ...ing, name: value, switchItem: null };
+      return { ...ing, [field]: value };
+    });
+    updateIngredients(ingredients);
+  };
+
+  const removeIngredient = (index) => {
+    updateIngredients(recognized.ingredients.filter((_, i) => i !== index));
+  };
+
+  const addIngredient = () => {
+    updateIngredients([...(recognized.ingredients || []), { name: '', switchItem: null, grams: 50 }]);
+  };
+
   // Nuovo flusso: dopo riconoscimento → quiz
   const handleContinueToQuiz = () => {
     navigate('/quiz');
@@ -236,7 +262,7 @@ function RecognizeScreen() {
   return (
     <SwitchLayout 
       title={`📸 ${t('recognize.title')}`}
-      subtitle={language === 'it' ? 'Fotografa il tuo prodotto' : 'Take a photo of your product'}
+      subtitle={language === 'it' ? 'Fotografa un prodotto o un piatto' : 'Take a photo of a product or a dish'}
       compact={true}
     >
       <GlobalProgress currentStep="recognize" language={language} />
@@ -645,6 +671,62 @@ function RecognizeScreen() {
           >
             🔄 {t('recognize.wrongProduct')}
           </button>
+
+          {/* Piatto: ingredienti riconosciuti, modificabili */}
+          {recognized.isDish && (
+            <div style={{
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '14px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontWeight: 700, color: SWITCH_COLORS.darkBlue, marginBottom: '4px' }}>
+                🧾 {language === 'it' ? 'Ingredienti della porzione' : 'Ingredients of the portion'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '10px' }}>
+                {language === 'it'
+                  ? 'Stimati dall\'AI. Correggi se qualcosa non torna.'
+                  : 'Estimated by AI. Fix anything that looks wrong.'}
+              </div>
+              {recognized.ingredients.map((ing, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <input
+                    value={ing.name}
+                    onChange={(e) => changeIngredient(idx, 'name', e.target.value)}
+                    placeholder={language === 'it' ? 'Ingrediente' : 'Ingredient'}
+                    style={{ flex: 1, minWidth: 0, padding: '8px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '0.9rem' }}
+                  />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={ing.grams}
+                    onChange={(e) => changeIngredient(idx, 'grams', e.target.value === '' ? '' : Number(e.target.value))}
+                    style={{ width: '64px', padding: '8px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '0.9rem', textAlign: 'right' }}
+                  />
+                  <span style={{ fontSize: '0.8rem', color: '#666' }}>g</span>
+                  <button
+                    onClick={() => removeIngredient(idx)}
+                    aria-label={language === 'it' ? 'Rimuovi' : 'Remove'}
+                    style={{ border: 'none', background: '#fdecea', color: '#c62828', borderRadius: '8px', width: '32px', height: '34px', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addIngredient}
+                style={{
+                  width: '100%', padding: '8px', marginTop: '4px', background: 'transparent',
+                  border: `1px dashed ${SWITCH_COLORS.darkBlue}`, borderRadius: '8px',
+                  color: SWITCH_COLORS.darkBlue, cursor: 'pointer', fontSize: '0.9rem'
+                }}
+              >
+                + {language === 'it' ? 'Aggiungi ingrediente' : 'Add ingredient'}
+              </button>
+            </div>
+          )}
 
           {/* Nuovo: pulsante singolo per andare al quiz */}
           <button 

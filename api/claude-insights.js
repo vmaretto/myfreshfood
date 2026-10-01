@@ -1,3 +1,5 @@
+import claudeHelper from './_claude.js';
+const { callClaude } = claudeHelper;
 // api/claude-insights.js - Fast Single-Call Version
 // Analizza dati aggregati con UNA sola chiamata a Claude (evita timeout Vercel)
 
@@ -83,32 +85,11 @@ IMPORTANTE: Rispondi SOLO con JSON valido in questo formato:
 
 Genera 5-7 curiosities basate sui dati reali. Concentrati sugli ALIMENTI e sulle DIFFERENZE tra percezione e realtà.`;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1500,
-        temperature: 0.7,
-        messages: [{
-          role: "user",
-          content: prompt
-        }]
-      })
+    const rawText = await callClaude({
+      maxTokens: 6000,
+      messages: [{ role: "user", content: prompt }]
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Claude API error:', error);
-      throw new Error(error.error?.message || 'Claude API error');
-    }
-
-    const data = await response.json();
-    const responseText = data.content[0].text
+    const responseText = rawText
       .replace(/```json\s*/gi, '')
       .replace(/```\s*/gi, '')
       .trim();

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Brain, Droplets, Flame, Leaf, ChevronRight, Info } from 'lucide-react';
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
+import { fetchSwitchData } from '../utils/switchLookup';
 
 // Traduzioni nomi prodotti
 const productNames = {
@@ -92,7 +93,9 @@ export default function QuizScreen() {
     const storedScioResults = sessionStorage.getItem('scioResults');
     const storedScioScanData = sessionStorage.getItem('scioScanData');
     
-    if (storedScioScanData) {
+    if (productData.isDish) {
+      // Piatti: niente spettrometro, valori solo da SWITCH
+    } else if (storedScioScanData) {
       const scanData = JSON.parse(storedScioScanData);
       setScioData(scanData.nutrition || scanData);
     } else if (storedScioResults) {
@@ -102,21 +105,10 @@ export default function QuizScreen() {
     // Fetch SWITCH data
     const fetchSwitchData = async () => {
       try {
-        const searchTerm = productData.nameEn || productData.name;
-        const response = await fetch('/api/switch-lookup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nameEn: searchTerm })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setSwitchData(data);
-        } else {
-          // Nessun fallback - segnala che non ha trovato dati
-          console.warn('SWITCH API returned error, no fallback data will be used');
-          setSwitchData({ found: false });
-        }
+        const data = await fetchSwitchData(productData);
+        setSwitchData(data);
+        // ResultsScreen/ComparisonScreen reuse it (same recipe, no second lookup)
+        sessionStorage.setItem('switchData', JSON.stringify(data));
       } catch (error) {
         console.error('Error fetching SWITCH data:', error);
         // Nessun fallback - segnala che non ha trovato dati
@@ -229,6 +221,7 @@ export default function QuizScreen() {
 
   const realValues = getRealValues();
 
+  const isDish = !!product.isDish;
   const questions = [
     {
       id: 'calories',
@@ -238,7 +231,7 @@ export default function QuizScreen() {
         : `How many calories do you think 100g of ${translateProductName(product.name)} contains?`,
       unit: 'kcal/100g',
       min: 5,
-      max: 200,
+      max: isDish ? 600 : 200,
       step: 5,
       default: 50,
       realValue: realValues.calories,
@@ -252,7 +245,7 @@ export default function QuizScreen() {
         : `How many grams of carbohydrates do you think 100g of ${translateProductName(product.name)} contains?`,
       unit: 'g/100g',
       min: 0,
-      max: 50,
+      max: isDish ? 80 : 50,
       step: 1,
       default: 10,
       realValue: realValues.carbs,
@@ -266,7 +259,7 @@ export default function QuizScreen() {
         : `How many grams of protein do you think 100g of ${translateProductName(product.name)} contains?`,
       unit: 'g/100g',
       min: 0,
-      max: 30,
+      max: isDish ? 40 : 30,
       step: 0.1,
       default: 1,
       realValue: realValues.protein,
@@ -280,7 +273,7 @@ export default function QuizScreen() {
         : `How much CO₂ is emitted to produce 1kg of ${translateProductName(product.name)}?`,
       unit: 'kg CO₂/kg',
       min: 0.1,
-      max: 5.0,
+      max: isDish ? 15.0 : 5.0,
       step: 0.1,
       default: 1.0,
       realValue: realValues.co2,
@@ -294,8 +287,8 @@ export default function QuizScreen() {
         : `How many liters of water are needed to produce 1kg of ${translateProductName(product.name)}?`,
       unit: 'L/kg',
       min: 50,
-      max: 2000,
-      step: 50,
+      max: isDish ? 8000 : 2000,
+      step: isDish ? 100 : 50,
       default: 500,
       realValue: realValues.waterFootprint,
       color: SWITCH_COLORS.darkBlue
@@ -393,7 +386,7 @@ export default function QuizScreen() {
         console.error('Error creating participant:', err);
       }
       
-      navigate('/scan-flow');
+      navigate(product.isDish ? '/results' : '/scan-flow');
     }
   };
 
@@ -429,7 +422,7 @@ export default function QuizScreen() {
       }
     })();
     
-    navigate('/scan-flow');
+    navigate(product.isDish ? '/results' : '/scan-flow');
   };
 
   // Intro screen
