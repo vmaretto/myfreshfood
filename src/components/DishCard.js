@@ -53,7 +53,7 @@ function DishCard({ dish, productImage, switchData, loading }) {
   const topIngredient = ingredients.find((i) => i.found && i.co2Share !== null);
 
   useEffect(() => {
-    if (!dish?.name || loading) return;
+    if (!dish?.name || loading || !switchData) return;
     let cancelled = false;
     const load = async () => {
       setInfoLoading(true);
@@ -78,7 +78,7 @@ function DishCard({ dish, productImage, switchData, loading }) {
     load();
     return () => { cancelled = true; };
     // topIngredient depends on switchData: wait for it so the green tip can name it
-  }, [dish?.name, language, loading, topIngredient?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dish?.name, language, loading, !switchData, topIngredient?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const co2Grams = portion.co2 !== null && portion.co2 !== undefined ? portion.co2 * 1000 : null;
 
@@ -116,7 +116,7 @@ function DishCard({ dish, productImage, switchData, loading }) {
         )}
       </div>
 
-      {loading && (
+      {(loading || !switchData) && (
         <Section>
           <div style={{ textAlign: 'center', color: '#666' }}>
             🔄 {it ? 'Calcolo i valori dal database SWITCH...' : 'Computing values from the SWITCH database...'}
@@ -124,7 +124,7 @@ function DishCard({ dish, productImage, switchData, loading }) {
         </Section>
       )}
 
-      {!loading && !found && (
+      {!loading && switchData && !found && (
         <Section>
           <div style={{ textAlign: 'center', color: '#856404' }}>
             ⚠️ {it

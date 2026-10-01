@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
+import { setFlowMode } from '../utils/flowMode';
 
 // Product name translations
 const productNames = {
@@ -255,7 +256,12 @@ function RecognizeScreen() {
   };
 
   // Nuovo flusso: dopo riconoscimento → quiz
-  const handleContinueToQuiz = () => {
+  // Piatti → senza spettrometro; prodotti singoli (demo o foto) → con spettrometro
+  const suggestedMode = recognized && !recognized.isDish ? 'spectrometer' : 'switch';
+
+  const handleChooseFlow = (mode) => {
+    setFlowMode(mode);
+    sessionStorage.removeItem('quizProgress');
     navigate('/quiz');
   };
 
@@ -320,7 +326,7 @@ function RecognizeScreen() {
             color: 'white'
           }}>
             <span style={{ fontSize: '1rem', fontWeight: '700' }}>
-              🌟 {language === 'it' ? 'Prodotti Demo con Dati Spettrometro' : 'Demo Products with Spectrometer Data'}
+              🌟 {language === 'it' ? 'Prodotti dimostrativi' : 'Demo products'}
             </span>
           </div>
           
@@ -428,7 +434,7 @@ function RecognizeScreen() {
                   display: 'inline-block',
                   textShadow: '0 1px 2px rgba(0,0,0,0.2)'
                 }}>
-                  🔬 Ready
+                  ✓ Demo
                 </div>
               </div>
             ))}
@@ -446,8 +452,8 @@ function RecognizeScreen() {
             border: `1px solid ${SWITCH_COLORS.green}30`
           }}>
             👆 {language === 'it' 
-              ? 'Tocca un prodotto per iniziare subito con i dati dello spettrometro!' 
-              : 'Tap a product to start instantly with spectrometer data!'}
+              ? 'Tocca un prodotto per iniziare subito!' 
+              : 'Tap a product to start right away!'}
           </p>
 
           {/* Divider */}
@@ -639,7 +645,7 @@ function RecognizeScreen() {
                 color: SWITCH_COLORS.green,
                 fontWeight: '600'
               }}>
-                ✓ {language === 'it' ? 'Dati spettrometro disponibili' : 'Spectrometer data available'}
+                ✓ {language === 'it' ? 'Prodotto dimostrativo' : 'Demo product'}
               </div>
             )}
           </div>
@@ -728,28 +734,59 @@ function RecognizeScreen() {
             </div>
           )}
 
-          {/* Nuovo: pulsante singolo per andare al quiz */}
-          <button 
-            onClick={handleContinueToQuiz}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: '8px',
-              width: '100%',
-              padding: '16px',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: 'white',
-              background: SWITCH_COLORS.green,
-              border: 'none',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              boxShadow: `0 4px 12px ${SWITCH_COLORS.green}50`
-            }}
-          >
-            🧠 {language === 'it' ? 'Continua con il Quiz' : 'Continue to Quiz'} →
-          </button>
+          {/* Scelta del percorso: con o senza spettrometro */}
+          <div style={{ fontWeight: 700, color: SWITCH_COLORS.darkBlue, textAlign: 'center', margin: '8px 0 12px' }}>
+            {language === 'it' ? 'Come vuoi proseguire?' : 'How do you want to continue?'}
+          </div>
+          {[
+            {
+              mode: 'switch',
+              icon: '🍽️',
+              title: language === 'it' ? 'Scopri il piatto' : 'Discover the dish',
+              text: language === 'it'
+                ? 'Quiz, impatto ambientale, ingredienti, storia e curiosità. Confronto con il database SWITCH.'
+                : 'Quiz, environmental impact, ingredients, history and curiosities. Compared with the SWITCH database.'
+            },
+            {
+              mode: 'spectrometer',
+              icon: '🔬',
+              title: language === 'it' ? 'Con lo spettrometro' : 'With the spectrometer',
+              text: language === 'it'
+                ? 'Quiz e misura dei valori reali con lo spettrometro, poi confronto con SWITCH.'
+                : 'Quiz and real measurement with the spectrometer, then comparison with SWITCH.'
+            }
+          ].map((option) => {
+            const suggested = option.mode === suggestedMode;
+            return (
+              <button
+                key={option.mode}
+                onClick={() => handleChooseFlow(option.mode)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '14px 16px',
+                  marginBottom: '10px',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  border: suggested ? 'none' : `2px solid ${SWITCH_COLORS.green}`,
+                  background: suggested ? SWITCH_COLORS.green : 'white',
+                  color: suggested ? 'white' : SWITCH_COLORS.darkBlue,
+                  boxShadow: suggested ? `0 4px 12px ${SWITCH_COLORS.green}50` : 'none'
+                }}
+              >
+                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                  {option.icon} {option.title} →
+                  {suggested && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, marginLeft: '8px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.25)' }}>
+                      {language === 'it' ? 'consigliato' : 'suggested'}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.82rem', marginTop: '4px', opacity: 0.9 }}>{option.text}</div>
+              </button>
+            );
+          })}
         </div>
       )}
       

@@ -7,7 +7,7 @@ const resources = {
     translation: {
       // Welcome Screen
       "welcome.title": "MyFreshFood",
-      "welcome.subtitle": "Analizza i valori nutrizionali con lo spettrometro",
+      "welcome.subtitle": "Fotografa un alimento o un piatto e scopri il suo impatto",
       "welcome.howItWorks": "Come funziona",
       "welcome.step1": "Misura l'alimento con lo spettrometro",
       "welcome.step2": "Fai uno screenshot dall'app spettrometro",
@@ -75,7 +75,7 @@ const resources = {
       // Results Screen
       "results.title": "Risultati Analisi",
       "results.noData": "Nessun dato disponibile",
-      "results.goToScan": "Vai alla scansione",
+      "results.goToScan": "Fotografa un alimento",
       "results.nutritionValues": "Valori Nutrizionali",
       "results.calories": "Calorie",
       "results.carbs": "Carboidrati",
@@ -92,7 +92,7 @@ const resources = {
       "results.sending": "Invio in corso...",
       "results.sentSuccess": "Dati inviati con successo!",
       "results.sendError": "Errore durante l'invio. Riprova.",
-      "results.newScan": "Nuova scansione",
+      "results.newScan": "Nuova foto",
       "results.startOver": "Ricomincia da capo",
       
       // Dashboard
@@ -312,7 +312,7 @@ const resources = {
     translation: {
       // Welcome Screen
       "welcome.title": "MyFreshFood",
-      "welcome.subtitle": "Analyze nutritional values with the spectrometer",
+      "welcome.subtitle": "Take a photo of a food or a dish and discover its impact",
       "welcome.howItWorks": "How it works",
       "welcome.step1": "Measure the food with spectrometer",
       "welcome.step2": "Take a screenshot from the spectrometer app",
@@ -380,7 +380,7 @@ const resources = {
       // Results Screen
       "results.title": "Analysis Results",
       "results.noData": "No data available",
-      "results.goToScan": "Go to scan",
+      "results.goToScan": "Take a food photo",
       "results.nutritionValues": "Nutritional Values",
       "results.calories": "Calories",
       "results.carbs": "Carbohydrates",
@@ -397,7 +397,7 @@ const resources = {
       "results.sending": "Sending...",
       "results.sentSuccess": "Data sent successfully!",
       "results.sendError": "Error sending data. Please try again.",
-      "results.newScan": "New scan",
+      "results.newScan": "New photo",
       "results.startOver": "Start over",
       
       // Dashboard

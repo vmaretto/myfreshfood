@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { trackEvent } from '../utils/analytics';
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
+import { getFlowMode, isSpectrometerFlow } from '../utils/flowMode';
 import GlobalProgress from '../components/GlobalProgress';
 import { generateRanking, findParticipantRank } from '../utils/rankingUtils';
 
@@ -16,10 +17,12 @@ function FeedbackScreen() {
     foundDifferences: null,
     differenceExplanation: '',
     spectrometerUseful: null,
+    discoveredNew: null,
     overallRating: 0,
     comments: ''
   });
   
+  const spectrometerFlow = isSpectrometerFlow();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [ranking, setRanking] = useState(null);
@@ -66,9 +69,10 @@ function FeedbackScreen() {
         data: {
           profile: profileData,
           product: recognizedProduct,
-          scioResults: results,
-          scanMethod: scanMethod,
+          scioResults: spectrometerFlow ? results : null,
+          scanMethod: spectrometerFlow ? scanMethod : null,
           feedback: feedback,
+          flowMode: getFlowMode(),
           quizResults: quizResults
         }
       };
@@ -262,8 +266,38 @@ function FeedbackScreen() {
         ← {language === 'it' ? 'Indietro' : 'Back'}
       </button>
       
+      {/* Percorso senza spettrometro: domanda sulla scoperta al posto di quelle sullo spettrometro */}
+      {!spectrometerFlow && (
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold', color: SWITCH_COLORS.darkBlue }}>
+            {language === 'it' ? 'Hai scoperto qualcosa di nuovo su questo piatto?' : 'Did you discover something new about this dish?'}
+          </label>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {['yes', 'somewhat', 'no'].map(option => (
+              <button
+                key={option}
+                onClick={() => setFeedback(prev => ({ ...prev, discoveredNew: option }))}
+                style={{
+                  flex: 1,
+                  minWidth: '80px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: feedback.discoveredNew === option ? `2px solid ${SWITCH_COLORS.green}` : '2px solid #ddd',
+                  background: feedback.discoveredNew === option ? '#e8f5e9' : '#fff',
+                  color: feedback.discoveredNew === option ? SWITCH_COLORS.green : '#666',
+                  cursor: 'pointer',
+                  fontWeight: feedback.discoveredNew === option ? 'bold' : 'normal'
+                }}
+              >
+                {t(`feedback.option_${option}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Question 1: Found differences? */}
-      <div style={{ marginBottom: '24px' }}>
+      {spectrometerFlow && <div style={{ marginBottom: '24px' }}>
         <label style={{ 
           display: 'block', 
           marginBottom: '12px', 
@@ -294,10 +328,10 @@ function FeedbackScreen() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Question 2: How do you explain differences? (conditional) */}
-      {feedback.foundDifferences && feedback.foundDifferences !== 'no' && (
+      {spectrometerFlow && feedback.foundDifferences && feedback.foundDifferences !== 'no' && (
         <div style={{ marginBottom: '24px' }}>
           <label style={{ 
             display: 'block', 
@@ -326,7 +360,7 @@ function FeedbackScreen() {
       )}
 
       {/* Question 3: Spectrometer useful? */}
-      <div style={{ marginBottom: '24px' }}>
+      {spectrometerFlow && <div style={{ marginBottom: '24px' }}>
         <label style={{ 
           display: 'block', 
           marginBottom: '12px', 
@@ -368,7 +402,7 @@ function FeedbackScreen() {
           <span>{t('feedback.not_useful')}</span>
           <span>{t('feedback.very_useful')}</span>
         </div>
-      </div>
+      </div>}
 
       {/* Question 4: Overall rating with stars */}
       <div style={{ marginBottom: '24px' }}>

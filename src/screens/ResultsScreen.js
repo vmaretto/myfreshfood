@@ -7,6 +7,7 @@ import { Flame, Droplets, Leaf, TrendingUp, TrendingDown, Minus, Trophy, Target 
 import ProductCard from '../components/ProductCard';
 import DishCard from '../components/DishCard';
 import { fetchSwitchData } from '../utils/switchLookup';
+import { isSpectrometerFlow } from '../utils/flowMode';
 // EnvironmentalCard now integrated in ProductCard
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
@@ -160,9 +161,12 @@ function ResultsScreen() {
     
     const directScanData = sessionStorage.getItem('scioScanData');
     const storedScanMethod = sessionStorage.getItem('scanMethod');
-    setScanMethod(storedScanMethod);
+    const spectrometerFlow = isSpectrometerFlow();
+    setScanMethod(spectrometerFlow ? storedScanMethod : null);
     
-    if (directScanData && storedScanMethod === 'direct') {
+    if (!spectrometerFlow) {
+      // Percorso senza spettrometro: nessun valore misurato
+    } else if (directScanData && storedScanMethod === 'direct') {
       const scanData = JSON.parse(directScanData);
       setResults({
         value: scanData.value,
@@ -216,7 +220,7 @@ function ResultsScreen() {
   }, []);
 
   useEffect(() => {
-    const fetchSwitchData = async () => {
+    const loadSwitchData = async () => {
       if (!recognizedProduct) return;
       
       if (!recognizedProduct.isDish && !(recognizedProduct.nameEn || recognizedProduct.name)) return;
@@ -244,7 +248,7 @@ function ResultsScreen() {
       }
     };
     
-    fetchSwitchData();
+    loadSwitchData();
   }, [recognizedProduct]);
 
   const handleNewScan = () => {

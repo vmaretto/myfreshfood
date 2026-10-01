@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Trophy, TrendingUp, TrendingDown, Minus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
+import { isSpectrometerFlow } from '../utils/flowMode';
 import GlobalProgress from '../components/GlobalProgress';
 
 // Componente per riga di confronto a 3 colonne
@@ -209,7 +210,9 @@ export default function ComparisonScreen() {
     const storedProduct = sessionStorage.getItem('recognizedProduct');
     
     if (storedQuiz) setQuizAnswers(JSON.parse(storedQuiz));
-    if (storedScioScan) {
+    if (!isSpectrometerFlow()) {
+      // Percorso senza spettrometro: confronto solo con SWITCH
+    } else if (storedScioScan) {
       const scanData = JSON.parse(storedScioScan);
       setScioData(scanData.nutrition || scanData);
     } else if (storedScio) {
@@ -258,6 +261,7 @@ export default function ComparisonScreen() {
 
   const score = calculateScore();
   const isDish = !!(recognizedProduct?.isDish || switchData?.isDish);
+  const hideMeasured = !isSpectrometerFlow();
 
   const getBadge = (s) => {
     if (s >= 90) return { name: language === 'it' ? '🏆 Esperto Assoluto!' : '🏆 Absolute Expert!', color: SWITCH_COLORS.gold };
@@ -385,7 +389,7 @@ export default function ComparisonScreen() {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <span><strong style={{ color: SWITCH_COLORS.darkBlue }}>{language === 'it' ? 'Tua Stima' : 'Your Estimate'}</strong> = {language === 'it' ? 'quello che hai indicato' : 'what you estimated'}</span>
-          {!isDish && <span><strong style={{ color: '#1d4ed8' }}>{language === 'it' ? 'Misurato' : 'Measured'}</strong> = {language === 'it' ? 'dallo spettrometro' : 'from spectrometer'}</span>}
+          {!hideMeasured && <span><strong style={{ color: '#1d4ed8' }}>{language === 'it' ? 'Misurato' : 'Measured'}</strong> = {language === 'it' ? 'dallo spettrometro' : 'from spectrometer'}</span>}
           <span><strong style={{ color: '#15803d' }}>DB SWITCH</strong> = {isDish ? (language === 'it' ? 'somma degli ingredienti del piatto' : 'sum of the dish ingredients') : (language === 'it' ? 'valore medio' : 'average value')}</span>
         </div>
       </div>
@@ -408,7 +412,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.energy}
           unit="kcal/100g"
           language={language}
-          hideMeasured={isDish}
+          hideMeasured={hideMeasured}
         />
         
         <ComparisonRow
@@ -419,7 +423,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.carbohydrates}
           unit="g/100g"
           language={language}
-          hideMeasured={isDish}
+          hideMeasured={hideMeasured}
         />
         
         <ComparisonRow
@@ -430,7 +434,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.nutrition?.proteins}
           unit="g/100g"
           language={language}
-          hideMeasured={isDish}
+          hideMeasured={hideMeasured}
         />
         
         <ComparisonRow
@@ -441,7 +445,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.environmental?.carbonFootprint}
           unit="kg/kg"
           language={language}
-          hideMeasured={isDish}
+          hideMeasured={hideMeasured}
         />
         
         <ComparisonRow
@@ -452,7 +456,7 @@ export default function ComparisonScreen() {
           dbSwitch={switchData?.environmental?.waterFootprint}
           unit="L/kg"
           language={language}
-          hideMeasured={isDish}
+          hideMeasured={hideMeasured}
         />
       </div>
 
@@ -506,7 +510,7 @@ export default function ComparisonScreen() {
           cursor: 'pointer'
         }}
       >
-        ← {language === 'it' ? 'Torna alla Scheda Prodotto' : 'Back to Product Card'}
+        ← {isDish ? (language === 'it' ? 'Torna alla Scheda Piatto' : 'Back to Dish Card') : (language === 'it' ? 'Torna alla Scheda Prodotto' : 'Back to Product Card')}
       </button>
 
       <button 

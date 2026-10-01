@@ -16,16 +16,16 @@ function WelcomeScreen() {
   // Nuovo flusso a 6 step
   const steps = language === 'it' ? [
     { icon: '👤', text: 'Compila il tuo profilo' },
-    { icon: '📸', text: 'Fotografa il prodotto' },
+    { icon: '📸', text: 'Fotografa un alimento o un piatto' },
     { icon: '🧠', text: 'Stima i valori nel quiz' },
-    { icon: '🔬', text: 'Scansiona con spettrometro' },
+    { icon: '🌍', text: 'Scopri impatto, ingredienti e storia' },
     { icon: '📊', text: 'Confronta percezione vs realtà' },
     { icon: '⭐', text: 'Dai il tuo feedback' }
   ] : [
     { icon: '👤', text: 'Complete your profile' },
-    { icon: '📸', text: 'Take a product photo' },
+    { icon: '📸', text: 'Take a photo of a food or a dish' },
     { icon: '🧠', text: 'Estimate values in quiz' },
-    { icon: '🔬', text: 'Scan with spectrometer' },
+    { icon: '🌍', text: 'Discover impact, ingredients and history' },
     { icon: '📊', text: 'Compare perception vs reality' },
     { icon: '⭐', text: 'Give your feedback' }
   ];

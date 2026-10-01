@@ -1,8 +1,9 @@
 // src/components/GlobalProgress.js - Progress bar globale a 6 step
 import React from 'react';
 import { SWITCH_COLORS } from './SwitchLayout';
+import { isSpectrometerFlow } from '../utils/flowMode';
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 'profile', label: { it: 'Profilo', en: 'Profile' }, icon: '👤' },
   { id: 'recognize', label: { it: 'Foto', en: 'Photo' }, icon: '📸' },
   { id: 'quiz', label: { it: 'Quiz', en: 'Quiz' }, icon: '🧠' },
@@ -12,6 +13,8 @@ const STEPS = [
 ];
 
 export default function GlobalProgress({ currentStep, language = 'it' }) {
+  // Lo step Scan esiste solo nel percorso con lo spettrometro
+  const STEPS = isSpectrometerFlow() ? ALL_STEPS : ALL_STEPS.filter(s => s.id !== 'scan');
   const currentIndex = STEPS.findIndex(s => s.id === currentStep);
   
   return (
@@ -71,4 +74,4 @@ export default function GlobalProgress({ currentStep, language = 'it' }) {
   );
 }
 
-export { STEPS };
+export { ALL_STEPS as STEPS };

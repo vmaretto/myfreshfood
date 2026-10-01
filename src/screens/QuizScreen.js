@@ -6,6 +6,7 @@ import { Brain, Droplets, Flame, Leaf, ChevronRight, Info } from 'lucide-react';
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
 import { fetchSwitchData } from '../utils/switchLookup';
+import { getFlowMode, isSpectrometerFlow } from '../utils/flowMode';
 
 // Traduzioni nomi prodotti
 const productNames = {
@@ -93,8 +94,8 @@ export default function QuizScreen() {
     const storedScioResults = sessionStorage.getItem('scioResults');
     const storedScioScanData = sessionStorage.getItem('scioScanData');
     
-    if (productData.isDish) {
-      // Piatti: niente spettrometro, valori solo da SWITCH
+    if (!isSpectrometerFlow()) {
+      // Percorso senza spettrometro: valori solo da SWITCH
     } else if (storedScioScanData) {
       const scanData = JSON.parse(storedScioScanData);
       setScioData(scanData.nutrition || scanData);
@@ -103,7 +104,7 @@ export default function QuizScreen() {
     }
     
     // Fetch SWITCH data
-    const fetchSwitchData = async () => {
+    const loadSwitchData = async () => {
       try {
         const data = await fetchSwitchData(productData);
         setSwitchData(data);
@@ -118,7 +119,7 @@ export default function QuizScreen() {
       }
     };
     
-    fetchSwitchData();
+    loadSwitchData();
   }, [navigate]);
 
   // Save quiz progress for back navigation
@@ -375,7 +376,7 @@ export default function QuizScreen() {
           body: JSON.stringify({
             type: 'quiz_completed',
             language: language,
-            data: { profile: profileData, product: { name: product.name }, quizResults: quizData }
+            data: { profile: profileData, product: { name: product.name, isDish: !!product.isDish }, flowMode: getFlowMode(), quizResults: quizData }
           })
         });
         if (res.ok) {
@@ -386,7 +387,7 @@ export default function QuizScreen() {
         console.error('Error creating participant:', err);
       }
       
-      navigate(product.isDish ? '/results' : '/scan-flow');
+      navigate(isSpectrometerFlow() ? '/scan-flow' : '/results');
     }
   };
 
@@ -410,7 +411,7 @@ export default function QuizScreen() {
           body: JSON.stringify({
             type: 'quiz_skipped',
             language: language,
-            data: { profile: profileData, product: { name: product.name }, quizResults: skipData }
+            data: { profile: profileData, product: { name: product.name, isDish: !!product.isDish }, flowMode: getFlowMode(), quizResults: skipData }
           })
         });
         if (res.ok) {
@@ -422,7 +423,7 @@ export default function QuizScreen() {
       }
     })();
     
-    navigate(product.isDish ? '/results' : '/scan-flow');
+    navigate(isSpectrometerFlow() ? '/scan-flow' : '/results');
   };
 
   // Intro screen
@@ -443,9 +444,9 @@ export default function QuizScreen() {
         }}>
           <div style={{ fontSize: '4rem', marginBottom: '10px' }}>{product.emoji || '🥬'}</div>
           <p style={{ color: '#666', margin: 0 }}>
-            {language === 'it' 
-              ? 'Prima di scansionare, metti alla prova le tue conoscenze!'
-              : 'Before scanning, test your knowledge!'}
+            {isSpectrometerFlow()
+              ? (language === 'it' ? 'Prima di scansionare, metti alla prova le tue conoscenze!' : 'Before scanning, test your knowledge!')
+              : (language === 'it' ? 'Prima di scoprire i dati, metti alla prova le tue conoscenze!' : 'Before discovering the data, test your knowledge!')}
           </p>
         </div>
 
@@ -474,9 +475,13 @@ export default function QuizScreen() {
             <li>💦 {language === 'it' ? 'Impronta idrica' : 'Water footprint'}</li>
           </ul>
           <p style={{ margin: '12px 0 0 0', fontWeight: '500', color: SWITCH_COLORS.darkBlue }}>
-            {language === 'it' 
-              ? '→ Dopo lo scan spettrometro confronteremo le tue stime con i dati reali!'
-              : '→ After spectrometer scan we\'ll compare your estimates with real data!'}
+            {isSpectrometerFlow()
+              ? (language === 'it'
+                ? '→ Dopo lo scan spettrometro confronteremo le tue stime con i dati reali!'
+                : '→ After spectrometer scan we\'ll compare your estimates with real data!')
+              : (language === 'it'
+                ? '→ Poi confronteremo le tue stime con i dati del database SWITCH!'
+                : '→ Then we\'ll compare your estimates with the SWITCH database!')}
           </p>
         </div>
 
@@ -681,7 +686,9 @@ export default function QuizScreen() {
       >
         {currentQuestion < questions.length - 1 
           ? (language === 'it' ? 'Prossima domanda' : 'Next question')
-          : (language === 'it' ? 'Vai alla scansione' : 'Go to scan')
+          : isSpectrometerFlow()
+            ? (language === 'it' ? 'Vai alla scansione' : 'Go to scan')
+            : (language === 'it' ? 'Scopri i risultati' : 'See the results')
         }
         <ChevronRight size={20} />
       </button>
