@@ -19,7 +19,7 @@ const products = {
     origin: { it: 'Sicilia, Italia', en: 'Sicily, Italy' },
     seasonality: { it: ['Giu', 'Lug', 'Ago', 'Set'], en: ['Jun', 'Jul', 'Aug', 'Sep'] },
     nutrition: {
-      calories: { value: 18, unit: 'kcal/100g' },
+      calories: { value: 18, unit: 'kcal per 100 g' },
       sugar: { value: 3.9, min: 3, max: 6, unit: '%' },
       water: { value: 94, unit: '%' },
       fiber: { value: 1.2, unit: 'g' },
@@ -58,7 +58,7 @@ const products = {
     origin: { it: 'Trentino Alto Adige', en: 'Trentino Alto Adige, Italy' },
     seasonality: { it: ['Set', 'Ott', 'Nov', 'Dic', 'Gen', 'Feb'], en: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'] },
     nutrition: {
-      calories: { value: 52, unit: 'kcal/100g' },
+      calories: { value: 52, unit: 'kcal per 100 g' },
       sugar: { value: 10.4, min: 9, max: 12, unit: '%' },
       water: { value: 86, unit: '%' },
       fiber: { value: 2.4, unit: 'g' },

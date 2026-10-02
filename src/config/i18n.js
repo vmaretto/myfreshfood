@@ -257,12 +257,12 @@ const resources = {
       "environmental.title": "Impatto Ambientale",
       "environmental.loading": "Caricamento dati ambientali...",
       "environmental.envScore": "Punteggio Ambientale",
-      "environmental.litersPerKg": "litri/kg",
+      "environmental.litersPerKg": "litri per 1 kg",
       "environmental.approximate": "approssimativo",
       "environmental.explanation": "Dati calcolati per 1 kg di prodotto. Fonte: SWITCH Food Explorer Database.",
       
       // Results additions
-      "results.nutritionSource": "Dati calcolati per 100g di prodotto. Fonte: SWITCH Food Explorer Database.",
+      "results.nutritionSource": "Dati calcolati per 100 g di prodotto. Fonte: SWITCH Food Explorer Database.",
       "results.continueToFeedback": "Continua",
       
       // Feedback Screen
@@ -562,12 +562,12 @@ const resources = {
       "environmental.title": "Environmental Impact",
       "environmental.loading": "Loading environmental data...",
       "environmental.envScore": "Environmental Score",
-      "environmental.litersPerKg": "liters/kg",
+      "environmental.litersPerKg": "liters per 1 kg",
       "environmental.approximate": "approximate",
       "environmental.explanation": "Data calculated per 1 kg of product. Source: SWITCH Food Explorer Database.",
       
       // Results additions
-      "results.nutritionSource": "Data calculated per 100g of product. Source: SWITCH Food Explorer Database.",
+      "results.nutritionSource": "Data calculated per 100 g of product. Source: SWITCH Food Explorer Database.",
       "results.continueToFeedback": "Continue",
       
       // Feedback Screen

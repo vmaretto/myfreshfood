@@ -484,7 +484,7 @@ function ProductCard({ productName, measuredValue, measuredData, productImage, s
                 marginBottom: '4px'
               }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#888', textTransform: 'uppercase' }}>
-                  {language === 'en' ? 'Nutrient' : 'Nutriente'}
+                  {language === 'en' ? 'Nutrient (per 100 g)' : 'Nutriente (per 100 g)'}
                 </div>
                 <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#1565c0', textAlign: 'center', textTransform: 'uppercase' }}>
                   🔬 {language === 'en' ? 'Measured' : 'Misurato'}
@@ -620,12 +620,12 @@ function ProductCard({ productName, measuredValue, measuredData, productImage, s
           </h3>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            {nutrition.calories && <NutrientBox label={t('productCard.calories', 'Calorie')} value={nutrition.calories} unit="kcal/100g" icon="🔥" />}
-            {nutrition.protein && <NutrientBox label={t('productCard.protein', 'Proteine')} value={nutrition.protein} unit="g" icon="💪" />}
-            {nutrition.carbs && <NutrientBox label={t('productCard.carbs', 'Carboidrati')} value={nutrition.carbs} unit="g" icon="🍞" />}
-            {nutrition.fat && <NutrientBox label={t('productCard.fat', 'Grassi')} value={nutrition.fat} unit="g" icon="🧈" />}
-            {nutrition.fiber && <NutrientBox label={t('productCard.fiber', 'Fibre')} value={nutrition.fiber} unit="g" icon="🌾" />}
-            {nutrition.sugar && <NutrientBox label={t('productCard.sugar', 'Zuccheri')} value={nutrition.sugar} unit="g" icon="🍬" />}
+            {nutrition.calories && <NutrientBox label={t('productCard.calories', 'Calorie')} value={nutrition.calories} unit="kcal per 100 g" icon="🔥" />}
+            {nutrition.protein && <NutrientBox label={t('productCard.protein', 'Proteine')} value={nutrition.protein} unit="g per 100 g" icon="💪" />}
+            {nutrition.carbs && <NutrientBox label={t('productCard.carbs', 'Carboidrati')} value={nutrition.carbs} unit="g per 100 g" icon="🍞" />}
+            {nutrition.fat && <NutrientBox label={t('productCard.fat', 'Grassi')} value={nutrition.fat} unit="g per 100 g" icon="🧈" />}
+            {nutrition.fiber && <NutrientBox label={t('productCard.fiber', 'Fibre')} value={nutrition.fiber} unit="g per 100 g" icon="🌾" />}
+            {nutrition.sugar && <NutrientBox label={t('productCard.sugar', 'Zuccheri')} value={nutrition.sugar} unit="g per 100 g" icon="🍬" />}
           </div>
           
           {/* Source indicator with matched item */}
@@ -696,7 +696,7 @@ function ProductCard({ productName, measuredValue, measuredData, productImage, s
                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#333' }}>
                   {switchData.environmental.carbonFootprint?.toFixed(2) || '—'}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#666' }}>kg CO₂e/kg</div>
+                <div style={{ fontSize: '0.7rem', color: '#666' }}>kg CO₂e per 1 kg</div>
                 <div style={{
                   display: 'inline-block',
                   padding: '3px 8px',
@@ -721,7 +721,7 @@ function ProductCard({ productName, measuredValue, measuredData, productImage, s
                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#333' }}>
                   {switchData.environmental.waterFootprint?.toFixed(0) || '—'}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#666' }}>{t('productCard.litersPerKg', 'litri/kg')}</div>
+                <div style={{ fontSize: '0.7rem', color: '#666' }}>{language === 'en' ? 'liters per 1 kg' : 'litri per 1 kg'}</div>
                 <div style={{
                   display: 'inline-block',
                   padding: '3px 8px',

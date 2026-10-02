@@ -7,6 +7,7 @@ import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import GlobalProgress from '../components/GlobalProgress';
 import { fetchSwitchData } from '../utils/switchLookup';
 import { getFlowMode, isSpectrometerFlow } from '../utils/flowMode';
+import { getUnitLabels, getSwitchReference, UNITS_PORTION, UNITS_NATIVE } from '../utils/units';
 
 // Traduzioni nomi prodotti
 const productNames = {
@@ -155,84 +156,112 @@ export default function QuizScreen() {
     );
   }
 
-  // Valori reali: SCIO per nutrienti (se disponibili), SWITCH per impatto ambientale
+  const isDish = !!(product.isDish || switchData?.isDish);
+  const portionGrams = isDish ? (switchData?.portion?.grams || null) : null;
+  const units = getUnitLabels(language, isDish);
+
+  // Riferimento SWITCH sulla base giusta: porzione per i piatti, 100 g / 1 kg per i prodotti.
+  // È lo stesso riferimento usato per il punteggio e dalla schermata di confronto.
+  const switchRef = getSwitchReference(switchData, isDish);
+
+  // Valori reali: per i prodotti SCIO (se misurato, per 100 g) ha priorità su SWITCH per le calorie;
+  // per i piatti tutto viene dalla porzione SWITCH (lo spettrometro non misura un piatto intero).
   // NESSUN FALLBACK - se non ci sono dati, restituisce null
   const getRealValues = () => {
-    const switchNutrition = switchData?.nutrition || {};
-    const environmental = switchData?.environmental || {};
     const hasSwitchData = switchData?.found !== false;
-    
-    // PRIORITÀ per nutrienti: SCIO > SWITCH (no fallback)
-    // I dati spettrometro sono misurati sul prodotto specifico, quindi sono i "veri" valori reali
-    const getCalories = () => {
-      if (scioData?.calories) return scioData.calories;
-      if (hasSwitchData && (switchNutrition.calories || switchNutrition.energy)) {
-        return switchNutrition.calories || switchNutrition.energy;
-      }
-      return null; // Nessun dato disponibile
-    };
-    
-    const getWater = () => {
-      if (scioData?.water) return scioData.water;
-      if (hasSwitchData && switchNutrition.water) {
-        return switchNutrition.water;
-      }
-      return null; // Nessun dato disponibile
-    };
-    
-    // Impatto ambientale: solo da SWITCH (SCIO non lo misura) - NO FALLBACK
-    const getCO2 = () => {
-      if (hasSwitchData && (environmental.carbonFootprint || environmental.co2)) {
-        return parseFloat(environmental.carbonFootprint || environmental.co2);
-      }
-      return null;
-    };
-    
-    const getWaterFootprint = () => {
-      if (hasSwitchData && (environmental.waterFootprint || environmental.water)) {
-        return parseFloat(environmental.waterFootprint || environmental.water);
-      }
-      return null;
-    };
-    
-    // Carboidrati e Proteine da SWITCH
-    const getCarbs = () => {
-      if (hasSwitchData && switchNutrition.carbohydrates) {
-        return parseFloat(switchNutrition.carbohydrates);
-      }
-      return null;
-    };
-    
-    const getProtein = () => {
-      if (hasSwitchData && switchNutrition.proteins) {
-        return parseFloat(switchNutrition.proteins);
-      }
-      return null;
-    };
-    
+    const switchNutrition = switchData?.nutrition || {};
+    const scio = isDish ? null : scioData;
     return {
-      calories: getCalories(),
-      carbs: getCarbs(),
-      protein: getProtein(),
-      co2: getCO2(),
-      waterFootprint: getWaterFootprint(),
+      calories: scio?.calories || switchRef.calories,
+      carbs: switchRef.carbs,
+      protein: switchRef.protein,
+      co2: switchRef.co2,
+      waterFootprint: switchRef.waterFootprint,
+      ...(isDish ? {} : { water: scio?.water || (hasSwitchData && switchNutrition.water) || null }),
       hasSwitchData
     };
   };
 
   const realValues = getRealValues();
 
-  const isDish = !!product.isDish;
-  const questions = [
+  // Range degli slider. Piatti: valori per porzione, il massimo cresce con i grammi della porzione
+  // (dato già noto all'utente) e comunque contiene sempre il valore vero.
+  const niceCeil = (v, to) => Math.ceil(v / to) * to;
+  const dishMax = (base, perGram, real, to) => Math.max(
+    base,
+    portionGrams ? niceCeil(portionGrams * perGram, to) : 0,
+    real ? niceCeil(real * 1.3, to) : 0
+  );
+
+  const name = translateProductName(product.name);
+  const portionText = portionGrams ? `${portionGrams} g ` : '';
+
+  const questions = isDish ? [
+    {
+      id: 'calories',
+      icon: <Flame size={32} color="#FF6B6B" />,
+      question: language === 'it'
+        ? `Quante calorie ha questa porzione ${portionGrams ? `da ${portionGrams} g ` : ''}di ${name}?`
+        : `How many calories are in this ${portionText}portion of ${name}?`,
+      unit: units.calories,
+      min: 0, max: dishMax(1500, 4, realValues.calories, 100), step: 10, default: 500,
+      realValue: realValues.calories,
+      color: '#FF6B6B'
+    },
+    {
+      id: 'carbs',
+      icon: <Brain size={32} color="#FFA726" />,
+      question: language === 'it'
+        ? `Quanti grammi di carboidrati ha questa porzione ${portionGrams ? `da ${portionGrams} g ` : ''}di ${name}?`
+        : `How many grams of carbohydrates are in this ${portionText}portion of ${name}?`,
+      unit: units.carbs,
+      min: 0, max: dishMax(200, 0.6, realValues.carbs, 10), step: 1, default: 50,
+      realValue: realValues.carbs,
+      color: '#FFA726'
+    },
+    {
+      id: 'protein',
+      icon: <Droplets size={32} color="#7E57C2" />,
+      question: language === 'it'
+        ? `Quanti grammi di proteine ha questa porzione ${portionGrams ? `da ${portionGrams} g ` : ''}di ${name}?`
+        : `How many grams of protein are in this ${portionText}portion of ${name}?`,
+      unit: units.protein,
+      min: 0, max: dishMax(100, 0.3, realValues.protein, 10), step: 1, default: 25,
+      realValue: realValues.protein,
+      color: '#7E57C2'
+    },
+    {
+      id: 'co2',
+      icon: <Leaf size={32} color="#95E1A3" />,
+      question: language === 'it'
+        ? `Quanti grammi di CO₂e servono per produrre questa porzione ${portionGrams ? `da ${portionGrams} g ` : ''}di ${name}?`
+        : `How many grams of CO₂e are needed to produce this ${portionText}portion of ${name}?`,
+      unit: units.co2,
+      min: 0, max: dishMax(5000, 15, realValues.co2, 500), step: 25, default: 1000,
+      realValue: realValues.co2,
+      color: '#95E1A3'
+    },
+    {
+      id: 'waterFootprint',
+      icon: <Droplets size={32} color={SWITCH_COLORS.darkBlue} />,
+      question: language === 'it'
+        ? `Quanti litri d'acqua servono per produrre questa porzione ${portionGrams ? `da ${portionGrams} g ` : ''}di ${name}?`
+        : `How many liters of water are needed to produce this ${portionText}portion of ${name}?`,
+      unit: units.waterFootprint,
+      min: 0, max: dishMax(3000, 10, realValues.waterFootprint, 500), step: 10, default: 500,
+      realValue: realValues.waterFootprint,
+      color: SWITCH_COLORS.darkBlue
+    }
+  ] : [
     {
       id: 'calories',
       icon: <Flame size={32} color="#FF6B6B" />,
       question: language === 'it' 
-        ? `Quante calorie pensi che contenga 100g di ${translateProductName(product.name)}?`
-        : `How many calories do you think 100g of ${translateProductName(product.name)} contains?`,
-      unit: 'kcal/100g',
+        ? `Quante calorie pensi che contengano 100 g di ${name}?`
+        : `How many calories do you think 100 g of ${name} contain?`,
+      unit: units.calories,
       min: 5,
-      max: isDish ? 600 : 200,
+      max: 200,
       step: 5,
       default: 50,
       realValue: realValues.calories,
@@ -242,11 +271,11 @@ export default function QuizScreen() {
       id: 'carbs',
       icon: <Brain size={32} color="#FFA726" />,
       question: language === 'it'
-        ? `Quanti grammi di carboidrati pensi che contenga 100g di ${translateProductName(product.name)}?`
-        : `How many grams of carbohydrates do you think 100g of ${translateProductName(product.name)} contains?`,
-      unit: 'g/100g',
+        ? `Quanti grammi di carboidrati pensi che contengano 100 g di ${name}?`
+        : `How many grams of carbohydrates do you think 100 g of ${name} contain?`,
+      unit: units.carbs,
       min: 0,
-      max: isDish ? 80 : 50,
+      max: 50,
       step: 1,
       default: 10,
       realValue: realValues.carbs,
@@ -256,11 +285,11 @@ export default function QuizScreen() {
       id: 'protein',
       icon: <Droplets size={32} color="#7E57C2" />,
       question: language === 'it'
-        ? `Quanti grammi di proteine pensi che contenga 100g di ${translateProductName(product.name)}?`
-        : `How many grams of protein do you think 100g of ${translateProductName(product.name)} contains?`,
-      unit: 'g/100g',
+        ? `Quanti grammi di proteine pensi che contengano 100 g di ${name}?`
+        : `How many grams of protein do you think 100 g of ${name} contain?`,
+      unit: units.protein,
       min: 0,
-      max: isDish ? 40 : 30,
+      max: 30,
       step: 0.1,
       default: 1,
       realValue: realValues.protein,
@@ -270,11 +299,11 @@ export default function QuizScreen() {
       id: 'co2',
       icon: <Leaf size={32} color="#95E1A3" />,
       question: language === 'it'
-        ? `Quanta CO₂ viene emessa per produrre 1kg di ${translateProductName(product.name)}?`
-        : `How much CO₂ is emitted to produce 1kg of ${translateProductName(product.name)}?`,
-      unit: 'kg CO₂/kg',
+        ? `Quanti kg di CO₂e vengono emessi per produrre 1 kg di ${name}?`
+        : `How many kg of CO₂e are emitted to produce 1 kg of ${name}?`,
+      unit: units.co2,
       min: 0.1,
-      max: isDish ? 15.0 : 5.0,
+      max: 5.0,
       step: 0.1,
       default: 1.0,
       realValue: realValues.co2,
@@ -284,12 +313,12 @@ export default function QuizScreen() {
       id: 'waterFootprint',
       icon: <Droplets size={32} color={SWITCH_COLORS.darkBlue} />,
       question: language === 'it'
-        ? `Quanti litri d'acqua servono per produrre 1kg di ${translateProductName(product.name)}?`
-        : `How many liters of water are needed to produce 1kg of ${translateProductName(product.name)}?`,
-      unit: 'L/kg',
+        ? `Quanti litri d'acqua servono per produrre 1 kg di ${name}?`
+        : `How many liters of water are needed to produce 1 kg of ${name}?`,
+      unit: units.waterFootprint,
       min: 50,
-      max: isDish ? 8000 : 2000,
-      step: isDish ? 100 : 50,
+      max: 2000,
+      step: 50,
       default: 500,
       realValue: realValues.waterFootprint,
       color: SWITCH_COLORS.darkBlue
@@ -322,9 +351,6 @@ export default function QuizScreen() {
         let totalScore = 0;
         let count = 0;
         
-        const switchNutrition = switchData?.nutrition || {};
-        const environmental = switchData?.environmental || {};
-        
         const getScore = (deviation) => {
           if (deviation <= 10) return 100;
           if (deviation <= 20) return 80;
@@ -333,13 +359,9 @@ export default function QuizScreen() {
           return 20;
         };
         
-        const metrics = [
-          { key: 'calories', db: switchNutrition.calories || switchNutrition.energy },
-          { key: 'carbs', db: switchNutrition.carbohydrates },
-          { key: 'protein', db: switchNutrition.proteins },
-          { key: 'co2', db: environmental.carbonFootprint || environmental.co2 },
-          { key: 'waterFootprint', db: environmental.waterFootprint || environmental.water }
-        ];
+        // Stessa base della domanda: porzione per i piatti, 100 g / 1 kg per i prodotti
+        const metrics = ['calories', 'carbs', 'protein', 'co2', 'waterFootprint']
+          .map((key) => ({ key, db: switchRef[key] }));
         
         metrics.forEach(({ key, db }) => {
           const estimate = ans[key];
@@ -358,6 +380,8 @@ export default function QuizScreen() {
       const quizData = {
         answers: updatedAnswers,
         realValues,
+        units: isDish ? UNITS_PORTION : UNITS_NATIVE,
+        portionGrams,
         productName: product.name,
         timestamp: new Date().toISOString(),
         score: {
@@ -396,6 +420,8 @@ export default function QuizScreen() {
       answers: {},
       skipped: true,
       realValues,
+      units: isDish ? UNITS_PORTION : UNITS_NATIVE,
+      portionGrams,
       productName: product.name,
       timestamp: new Date().toISOString()
     };
@@ -464,15 +490,20 @@ export default function QuizScreen() {
           color: '#666'
         }}>
           <p style={{ margin: '0 0 12px 0' }}>
-            {language === 'it' 
-              ? 'Ti chiederemo di stimare 4 valori per questo prodotto:'
-              : 'We\'ll ask you to estimate 4 values for this product:'}
+            {isDish
+              ? (language === 'it'
+                ? `Ti chiederemo di stimare 5 valori per questa porzione${portionGrams ? ` da ${portionGrams} g` : ''}:`
+                : `We'll ask you to estimate 5 values for this${portionGrams ? ` ${portionGrams} g` : ''} portion:`)
+              : (language === 'it'
+                ? 'Ti chiederemo di stimare 5 valori per questo prodotto:'
+                : 'We\'ll ask you to estimate 5 values for this product:')}
           </p>
           <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '2' }}>
-            <li>🔥 {language === 'it' ? 'Calorie' : 'Calories'}</li>
-            <li>💧 {language === 'it' ? 'Contenuto acqua' : 'Water content'}</li>
-            <li>🌱 {language === 'it' ? 'Impronta CO₂' : 'CO₂ footprint'}</li>
-            <li>💦 {language === 'it' ? 'Impronta idrica' : 'Water footprint'}</li>
+            <li>🔥 {language === 'it' ? 'Calorie' : 'Calories'} <span style={{ color: '#999' }}>({units.calories})</span></li>
+            <li>🍞 {language === 'it' ? 'Carboidrati' : 'Carbohydrates'} <span style={{ color: '#999' }}>({units.carbs})</span></li>
+            <li>💪 {language === 'it' ? 'Proteine' : 'Protein'} <span style={{ color: '#999' }}>({units.protein})</span></li>
+            <li>🌱 {language === 'it' ? 'Impronta CO₂' : 'CO₂ footprint'} <span style={{ color: '#999' }}>({units.co2})</span></li>
+            <li>💦 {language === 'it' ? 'Impronta idrica' : 'Water footprint'} <span style={{ color: '#999' }}>({units.waterFootprint})</span></li>
           </ul>
           <p style={{ margin: '12px 0 0 0', fontWeight: '500', color: SWITCH_COLORS.darkBlue }}>
             {isSpectrometerFlow()

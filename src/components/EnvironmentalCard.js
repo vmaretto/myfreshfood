@@ -109,7 +109,7 @@ function EnvironmentalCard({ data, loading }) {
             {environmental.carbonFootprint?.toFixed(2) || '—'}
           </div>
           <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '8px' }}>
-            kg CO₂e/kg
+            kg CO₂e per 1 kg
           </div>
           <div style={{
             display: 'inline-block',
@@ -136,7 +136,7 @@ function EnvironmentalCard({ data, loading }) {
             {environmental.waterFootprint?.toFixed(0) || '—'}
           </div>
           <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '8px' }}>
-            {t('environmental.litersPerKg', 'litri/kg')}
+            {t('environmental.litersPerKg', 'litri per 1 kg')}
           </div>
           <div style={{
             display: 'inline-block',

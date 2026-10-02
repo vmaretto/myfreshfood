@@ -6,9 +6,10 @@ import { Trophy, TrendingUp, TrendingDown, Minus, CheckCircle, XCircle, AlertCir
 import SwitchLayout, { SWITCH_COLORS } from '../components/SwitchLayout';
 import { isSpectrometerFlow } from '../utils/flowMode';
 import GlobalProgress from '../components/GlobalProgress';
+import { getUnitLabels, getSwitchReference } from '../utils/units';
 
 // Componente per riga di confronto a 3 colonne
-const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, language, hideMeasured }) => {
+const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, language, hideMeasured, digits = 1, localeFormat = false }) => {
   // Calcola scarto percentuale
   const calculateDeviation = (estimate, reference) => {
     if (!reference || reference === 0 || estimate === null || estimate === undefined) return null;
@@ -60,7 +61,13 @@ const ComparisonRow = ({ label, icon, userEstimate, measured, dbSwitch, unit, la
   
   const formatValue = (value) => {
     if (value === null || value === undefined) return 'N/A';
-    if (typeof value === 'number') return value.toFixed(1);
+    if (typeof value === 'number') {
+      // Piatti: stesso formato della scheda piatto (separatore italiano delle migliaia)
+      if (localeFormat) {
+        return value.toLocaleString(language === 'en' ? 'en-US' : 'it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+      }
+      return value.toFixed(digits);
+    }
     return value;
   };
 
@@ -231,13 +238,9 @@ export default function ComparisonScreen() {
     let totalScore = 0;
     let count = 0;
     
-    const metrics = [
-      { key: 'calories', db: switchData?.nutrition?.energy || switchData?.nutrition?.calories },
-      { key: 'carbs', db: switchData?.nutrition?.carbohydrates },
-      { key: 'protein', db: switchData?.nutrition?.proteins },
-      { key: 'co2', db: switchData?.environmental?.carbonFootprint },
-      { key: 'waterFootprint', db: switchData?.environmental?.waterFootprint }
-    ];
+    // Stessa base del quiz: porzione per i piatti, 100 g / 1 kg per i prodotti
+    const metrics = ['calories', 'carbs', 'protein', 'co2', 'waterFootprint']
+      .map((key) => ({ key, db: switchRef[key] }));
     
     const getScore = (deviation) => {
       if (deviation <= 10) return 100;
@@ -259,9 +262,17 @@ export default function ComparisonScreen() {
     return count > 0 ? Math.round(totalScore / count) : null;
   };
 
-  const score = calculateScore();
   const isDish = !!(recognizedProduct?.isDish || switchData?.isDish);
+  const switchRef = getSwitchReference(switchData, isDish);
+  const units = getUnitLabels(language, isDish);
+  const portionGrams = isDish ? switchData?.portion?.grams : null;
+  const score = calculateScore();
   const hideMeasured = !isSpectrometerFlow();
+  // Lo spettrometro misura 100 g di un singolo prodotto: per un piatto la colonna resta vuota
+  const measuredData = isDish ? null : scioData;
+  const rowFormat = isDish
+    ? { calories: 0, carbs: 1, protein: 1, co2: 0, waterFootprint: 0 }
+    : { calories: 1, carbs: 1, protein: 1, co2: 1, waterFootprint: 1 };
 
   const getBadge = (s) => {
     if (s >= 90) return { name: language === 'it' ? '🏆 Esperto Assoluto!' : '🏆 Absolute Expert!', color: SWITCH_COLORS.gold };
@@ -392,6 +403,15 @@ export default function ComparisonScreen() {
           {!hideMeasured && <span><strong style={{ color: '#1d4ed8' }}>{language === 'it' ? 'Misurato' : 'Measured'}</strong> = {language === 'it' ? 'dallo spettrometro' : 'from spectrometer'}</span>}
           <span><strong style={{ color: '#15803d' }}>DB SWITCH</strong> = {isDish ? (language === 'it' ? 'somma degli ingredienti del piatto' : 'sum of the dish ingredients') : (language === 'it' ? 'valore medio' : 'average value')}</span>
         </div>
+        <div style={{ marginTop: '8px', fontWeight: '600', color: SWITCH_COLORS.darkBlue }}>
+          {isDish
+            ? (language === 'it'
+              ? `Valori riferiti alla porzione${portionGrams ? ` di ${portionGrams} g` : ''}`
+              : `Values refer to the${portionGrams ? ` ${portionGrams} g` : ''} portion`)
+            : (language === 'it'
+              ? 'Calorie, carboidrati e proteine per 100 g; CO₂e e acqua per 1 kg di prodotto'
+              : 'Calories, carbohydrates and protein per 100 g; CO₂e and water per 1 kg of product')}
+        </div>
       </div>
 
       {/* Tabella Confronti */}
@@ -408,9 +428,11 @@ export default function ComparisonScreen() {
           label={language === 'it' ? 'Calorie' : 'Calories'}
           icon="🔥"
           userEstimate={answers.calories}
-          measured={scioData?.calories}
-          dbSwitch={switchData?.nutrition?.energy}
-          unit="kcal/100g"
+          measured={measuredData?.calories}
+          dbSwitch={switchRef.calories}
+          unit={units.calories}
+          digits={rowFormat.calories}
+          localeFormat={isDish}
           language={language}
           hideMeasured={hideMeasured}
         />
@@ -419,9 +441,11 @@ export default function ComparisonScreen() {
           label={language === 'it' ? 'Carboidrati' : 'Carbohydrates'}
           icon="🍞"
           userEstimate={answers.carbs}
-          measured={scioData?.carbs}
-          dbSwitch={switchData?.nutrition?.carbohydrates}
-          unit="g/100g"
+          measured={measuredData?.carbs}
+          dbSwitch={switchRef.carbs}
+          unit={units.carbs}
+          digits={rowFormat.carbs}
+          localeFormat={isDish}
           language={language}
           hideMeasured={hideMeasured}
         />
@@ -430,9 +454,11 @@ export default function ComparisonScreen() {
           label={language === 'it' ? 'Proteine' : 'Protein'}
           icon="💪"
           userEstimate={answers.protein}
-          measured={scioData?.protein}
-          dbSwitch={switchData?.nutrition?.proteins}
-          unit="g/100g"
+          measured={measuredData?.protein}
+          dbSwitch={switchRef.protein}
+          unit={units.protein}
+          digits={rowFormat.protein}
+          localeFormat={isDish}
           language={language}
           hideMeasured={hideMeasured}
         />
@@ -442,8 +468,10 @@ export default function ComparisonScreen() {
           icon="🌱"
           userEstimate={answers.co2}
           measured={null}
-          dbSwitch={switchData?.environmental?.carbonFootprint}
-          unit="kg/kg"
+          dbSwitch={switchRef.co2}
+          unit={units.co2}
+          digits={rowFormat.co2}
+          localeFormat={isDish}
           language={language}
           hideMeasured={hideMeasured}
         />
@@ -453,8 +481,10 @@ export default function ComparisonScreen() {
           icon="🚿"
           userEstimate={answers.waterFootprint}
           measured={null}
-          dbSwitch={switchData?.environmental?.waterFootprint}
-          unit="L/kg"
+          dbSwitch={switchRef.waterFootprint}
+          unit={units.waterFootprint}
+          digits={rowFormat.waterFootprint}
+          localeFormat={isDish}
           language={language}
           hideMeasured={hideMeasured}
         />

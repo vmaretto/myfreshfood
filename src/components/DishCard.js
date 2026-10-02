@@ -80,7 +80,14 @@ function DishCard({ dish, productImage, switchData, loading }) {
     // topIngredient depends on switchData: wait for it so the green tip can name it
   }, [dish?.name, language, loading, !switchData, topIngredient?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const co2Grams = portion.co2 !== null && portion.co2 !== undefined ? portion.co2 * 1000 : null;
+  const co2Grams = portion.co2 !== null && portion.co2 !== undefined ? Math.round(portion.co2 * 1000) : null;
+  // Stessi valori riportati a 100 g di piatto, per affiancarli alla porzione
+  const per100Of = (v) => (v === null || v === undefined || !portion.grams ? null : (v / portion.grams) * 100);
+  const co2Per100 = per100Of(co2Grams);
+  const waterPer100 = per100Of(portion.water);
+  const portionLabel = portion.grams > 0
+    ? (it ? `per la tua porzione (${portion.grams} g)` : `for your portion (${portion.grams} g)`)
+    : (it ? 'per la tua porzione' : 'for your portion');
 
   return (
     <div>
@@ -142,6 +149,9 @@ function DishCard({ dish, productImage, switchData, loading }) {
             background="linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 100%)"
             border="none"
           >
+            <div style={{ margin: '-8px 0 12px', fontSize: '0.85rem', color: '#555', textAlign: 'center' }}>
+              {portionLabel}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
               <ImpactTile icon="🏭" value={fmt(co2Grams)} unit="g CO₂e" label={it ? 'Emissioni' : 'Emissions'} color="#95E1A3" />
               <ImpactTile icon="💧" value={fmt(portion.water)} unit={it ? 'litri' : 'liters'} label={it ? 'Acqua' : 'Water'} color="#4FC3F7" />
@@ -158,6 +168,11 @@ function DishCard({ dish, productImage, switchData, loading }) {
 
           {/* Ingredienti */}
           <Section title={`🧾 ${it ? 'Ingredienti riconosciuti' : 'Recognized ingredients'}`}>
+            <div style={{ fontSize: '0.75rem', color: '#888', margin: '-6px 0 6px' }}>
+              {it
+                ? 'CO₂e, kcal e litri di ogni ingrediente si riferiscono ai suoi grammi nel piatto, non a 100 g.'
+                : 'CO₂e, kcal and liters of each ingredient refer to its grams in the dish, not to 100 g.'}
+            </div>
             {ingredients.map((ing, idx) => (
               <div key={`${ing.name}-${idx}`} style={{ padding: '10px 0', borderBottom: idx < ingredients.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
@@ -183,7 +198,7 @@ function DishCard({ dish, productImage, switchData, loading }) {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#888', marginTop: '3px' }}>
                       <span>SWITCH: {ing.matchedItem}</span>
-                      <span>{fmt(ing.nutrition?.energy)} kcal · {fmt(ing.water)} L</span>
+                      <span>{it ? 'per' : 'for'} {fmt(ing.grams)} g: {fmt(ing.nutrition?.energy)} kcal · {fmt(ing.water)} L</span>
                     </div>
                   </>
                 )}
@@ -199,11 +214,11 @@ function DishCard({ dish, productImage, switchData, loading }) {
           </Section>
 
           {/* Valori nutrizionali */}
-          <Section title={`📊 ${it ? 'Valori nutrizionali' : 'Nutrition facts'}`}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px', fontSize: '0.9rem' }}>
+          <Section title={`📊 ${it ? 'Valori nutrizionali e impatto' : 'Nutrition and impact'}`}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '6px', fontSize: '0.9rem' }}>
               <div style={{ fontSize: '0.72rem', color: '#888', textTransform: 'uppercase' }}></div>
-              <div style={{ fontSize: '0.72rem', color: '#888', textTransform: 'uppercase', textAlign: 'right' }}>{it ? 'Porzione' : 'Portion'}</div>
-              <div style={{ fontSize: '0.72rem', color: '#888', textTransform: 'uppercase', textAlign: 'right' }}>100 g</div>
+              <div style={{ fontSize: '0.72rem', color: '#888', textAlign: 'right' }}>{it ? 'Porzione' : 'Portion'}{portion.grams > 0 ? ` (${portion.grams} g)` : ''}</div>
+              <div style={{ fontSize: '0.72rem', color: '#888', textAlign: 'right' }}>100 g</div>
               {[
                 ['🔥', it ? 'Energia' : 'Energy', 'energy', 'kcal', 0],
                 ['💪', it ? 'Proteine' : 'Protein', 'proteins', 'g', 1],
@@ -216,6 +231,16 @@ function DishCard({ dish, productImage, switchData, loading }) {
                   <div style={{ color: '#444' }}>{icon} {label}</div>
                   <div style={{ textAlign: 'right', fontWeight: 600, color: SWITCH_COLORS.darkBlue }}>{fmt(portion[key], digits)} {unit}</div>
                   <div style={{ textAlign: 'right', color: '#666' }}>{fmt(per100[key], digits)} {unit}</div>
+                </React.Fragment>
+              ))}
+              {[
+                ['🏭', it ? 'Emissioni' : 'Emissions', co2Grams, co2Per100, 'g CO₂e'],
+                ['💧', it ? 'Acqua' : 'Water', portion.water, waterPer100, 'L'],
+              ].map(([icon, label, vPortion, v100, unit]) => (
+                <React.Fragment key={label}>
+                  <div style={{ color: '#444', borderTop: '1px solid #f0f0f0', paddingTop: '6px' }}>{icon} {label}</div>
+                  <div style={{ textAlign: 'right', fontWeight: 600, color: SWITCH_COLORS.darkBlue, borderTop: '1px solid #f0f0f0', paddingTop: '6px', whiteSpace: 'nowrap' }}>{fmt(vPortion)} {unit}</div>
+                  <div style={{ textAlign: 'right', color: '#666', borderTop: '1px solid #f0f0f0', paddingTop: '6px', whiteSpace: 'nowrap' }}>{fmt(v100)} {unit}</div>
                 </React.Fragment>
               ))}
             </div>

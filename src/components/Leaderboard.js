@@ -343,7 +343,7 @@ const Leaderboard = ({ ranking, language = 'it', currentParticipantId = null }) 
                     {data.scioResults && (
                       <DetailSection icon={<BarChart2 size={16} />} title={language === 'it' ? 'Risultati Spettrometro' : 'Spectrometer Results'}>
                         <DataRow label="Brix" value={data.scioResults.brix} />
-                        <DataRow label={language === 'it' ? 'Calorie' : 'Calories'} value={data.scioResults.calories ? `${data.scioResults.calories} kcal` : null} />
+                        <DataRow label={language === 'it' ? 'Calorie' : 'Calories'} value={data.scioResults.calories ? `${data.scioResults.calories} kcal per 100 g` : null} />
                         <DataRow label={language === 'it' ? 'Carboidrati' : 'Carbs'} value={data.scioResults.carbs ? `${data.scioResults.carbs}g` : null} />
                         <DataRow label={language === 'it' ? 'Zuccheri' : 'Sugar'} value={data.scioResults.sugar ? `${data.scioResults.sugar}g` : null} />
                         <DataRow label={language === 'it' ? 'Acqua' : 'Water'} value={data.scioResults.water ? `${data.scioResults.water}%` : null} />
